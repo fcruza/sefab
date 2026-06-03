@@ -387,7 +387,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   icon: const Icon(Icons.fingerprint),
                                   label: const Text(
-                                    'Ingresar con huella',
+                                    'Ingresar con huella 123',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
