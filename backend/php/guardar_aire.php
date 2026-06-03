@@ -1,0 +1,6 @@
+<?php require __DIR__.'/helpers.php';
+$in=$_POST ?: input_json(); $id=intval($in['id']??0); $fotoName=null;
+if(isset($_FILES['foto']) && $_FILES['foto']['error']==UPLOAD_ERR_OK){$ext=pathinfo($_FILES['foto']['name'],PATHINFO_EXTENSION)?:'jpg';$fotoName='aire_'.time().'_'.rand(1000,9999).'.'.$ext;move_uploaded_file($_FILES['foto']['tmp_name'],__DIR__.'/uploads/aires/'.$fotoName);} 
+$fields=['codigo','area','ubicacion','marca','modelo','serie','capacidad_btu','tipo','fecha_compra','fecha_instalacion','estado_operativo'];
+if($id>0){$set=[];$vals=[];foreach($fields as $f){$set[]="$f=?";$vals[]=$in[$f]??'';} if($fotoName){$set[]='foto=?';$vals[]=$fotoName;} $vals[]=$id; $pdo->prepare('UPDATE aires SET '.implode(',',$set).' WHERE id=?')->execute($vals);} else {$pdo->prepare('INSERT INTO aires(codigo,area,ubicacion,marca,modelo,serie,capacidad_btu,tipo,fecha_compra,fecha_instalacion,estado_operativo,foto,estado) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1)')->execute([$in['codigo']??'',$in['area']??'',$in['ubicacion']??'',$in['marca']??'',$in['modelo']??'',$in['serie']??'',$in['capacidad_btu']??'',$in['tipo']??'',$in['fecha_compra']??null,$in['fecha_instalacion']??null,$in['estado_operativo']??'Operativo',$fotoName]);}
+responder(true,'Aire guardado');

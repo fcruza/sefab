@@ -1,0 +1,1 @@
+<?php require __DIR__.'/helpers.php';$rows=$pdo->query('SELECT * FROM mantenimientos WHERE estado=1 ORDER BY fecha_programada DESC,id DESC')->fetchAll();responder(true,'OK',['mantenimientos'=>$rows]);

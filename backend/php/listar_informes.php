@@ -1,0 +1,1 @@
+<?php require __DIR__.'/helpers.php';$base=$config['base_url'];$rows=$pdo->query('SELECT * FROM informes WHERE estado=1 ORDER BY id DESC')->fetchAll();foreach($rows as &$r){$r['pdf_url']=$r['archivo_pdf']?$base.'uploads/informes/'.$r['archivo_pdf']:'';}responder(true,'OK',['informes'=>$rows]);

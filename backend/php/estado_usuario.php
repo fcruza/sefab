@@ -1,0 +1,1 @@
+<?php require __DIR__.'/helpers.php'; $in=input_json(); $pdo->prepare('UPDATE usuarios SET estado=? WHERE id=?')->execute([intval($in['estado']),intval($in['id'])]); responder(true,'Estado actualizado');
