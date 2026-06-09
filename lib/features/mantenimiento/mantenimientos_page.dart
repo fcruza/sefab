@@ -23,6 +23,9 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
   final SeguridadService seguridadService = SeguridadService();
   final Map<int, List<XFile>> evidenciasPorMantenimiento = {};
 
+  final TextEditingController buscarCtrl = TextEditingController();
+  String textoBusqueda = '';
+
   int mesSeleccionado = 5;
   int anioSeleccionado = 2026;
 
@@ -50,6 +53,12 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
   void initState() {
     super.initState();
     _cargarCronograma();
+  }
+
+  @override
+  void dispose() {
+    buscarCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarCronograma() async {
@@ -86,6 +95,29 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
 
   List<MantenimientoProgramado> get mantenimientosDelMes {
     return mantenimientos.where((m) => m.mes == mesSeleccionado).toList();
+  }
+
+  List<MantenimientoProgramado> get mantenimientosFiltrados {
+    final busqueda = textoBusqueda.toLowerCase().trim();
+
+    // Primero filtra por mes
+    final listaMes = mantenimientosDelMes;
+
+    // Si no se escribe nada, devuelve todo el mes seleccionado
+    if (busqueda.isEmpty) {
+      return listaMes;
+    }
+
+    // Si hay texto, busca solo dentro del mes seleccionado
+    return listaMes.where((m) {
+      return m.equipoCodigo.toLowerCase().contains(busqueda) ||
+          m.equipoMarca.toLowerCase().contains(busqueda) ||
+          m.area.toLowerCase().contains(busqueda) ||
+          m.ubicacion.toLowerCase().contains(busqueda) ||
+          m.estado.toLowerCase().contains(busqueda) ||
+          m.tipo.toLowerCase().contains(busqueda) ||
+          m.fase.toLowerCase().contains(busqueda);
+    }).toList();
   }
 
   int get totalMes => mantenimientosDelMes.length;
@@ -686,6 +718,51 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
                     },
                   ),
                 ),
+                const SizedBox(height: 14),
+
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: TextField(
+                    controller: buscarCtrl,
+                    onChanged: (value) {
+                      setState(() {
+                        textoBusqueda = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por código, área, marca o ubicación',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Colors.grey.shade700,
+                      ),
+                      suffixIcon: textoBusqueda.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close),
+                              color: Colors.grey,
+                              onPressed: () {
+                                setState(() {
+                                  buscarCtrl.clear();
+                                  textoBusqueda = '';
+                                });
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -725,13 +802,19 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
                           ),
                         ),
                       )
-                    : mantenimientosDelMes.isEmpty
-                        ? const Center(
+                    : mantenimientosFiltrados.isEmpty
+                        ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(22),
                             child: Text(
-                              'No hay mantenimientos programados para este mes.',
-                              style: TextStyle(color: Colors.black54),
+                              textoBusqueda.trim().isEmpty
+                                  ? 'No hay mantenimientos programados para este mes.'
+                                  : 'No se encontraron resultados para "$textoBusqueda" en este mes.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.black54),
                             ),
-                          )
+                          ),
+                        )
                         : ListView.builder(
                             padding: EdgeInsets.fromLTRB(
                               16,
@@ -739,9 +822,9 @@ class _MantenimientosPageState extends State<MantenimientosPage> {
                               16,
                               MediaQuery.of(context).padding.bottom + 110,
                             ),
-                            itemCount: mantenimientosDelMes.length,
+                            itemCount: mantenimientosFiltrados.length,
                             itemBuilder: (context, index) {
-                              final m = mantenimientosDelMes[index];
+                              final m = mantenimientosFiltrados[index];
                               final estadoColor = _estadoColor(m.estado);
                               final avanceChecklist = m.checklistTotal == 0
                                   ? 0.0

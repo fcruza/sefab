@@ -15,18 +15,14 @@ class InformesPage extends StatefulWidget {
 class _InformesPageState extends State<InformesPage> {
   final InformeService informeService = InformeService();
 
-  int mesSeleccionado = 7;
+  int? mesSeleccionado;
   int anioSeleccionado = 2026;
 
   bool cargando = false;
   String? error;
   Map<String, dynamic>? reporte;
 
-  final List<_MesItem> meses = const [
-    _MesItem(numero: 5, nombre: 'Mayo'),
-    _MesItem(numero: 6, nombre: 'Junio'),
-    _MesItem(numero: 7, nombre: 'Julio'),
-  ];
+  List<_MesItem> meses = [];
 
   @override
   void initState() {
@@ -35,11 +31,13 @@ class _InformesPageState extends State<InformesPage> {
   }
 
   Future<void> _abrirPdfInforme() async {
+    final mes = mesSeleccionado ?? 0;
+
     final requestId =
-        '${DateTime.now().millisecondsSinceEpoch}_${mesSeleccionado}_$anioSeleccionado';
+        '${DateTime.now().millisecondsSinceEpoch}_${mes}_$anioSeleccionado';
 
     final url = '${AppConfig.baseUrl}/generar_informe_pdf.php'
-        '?mes=$mesSeleccionado'
+        '?mes=$mes'
         '&anio=$anioSeleccionado'
         '&request_id=$requestId'
         '&api_key=${Uri.encodeComponent(AppConfig.apiKey)}';
@@ -78,13 +76,14 @@ class _InformesPageState extends State<InformesPage> {
 
     try {
       final data = await informeService.obtenerReporteMensual(
-        mes: mesSeleccionado,
+        mes: mesSeleccionado ?? 0,
         anio: anioSeleccionado,
       );
 
       if (!mounted) return;
 
       setState(() {
+        _cargarMesesDesdeCronograma(data['meses_cronograma']);
         reporte = data;
       });
     } catch (e) {
@@ -116,6 +115,61 @@ class _InformesPageState extends State<InformesPage> {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
     return {};
+  }
+
+  String _nombreMes(int mes) {
+    const nombres = [
+      '',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Setiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+
+    if (mes < 1 || mes > 12) return 'Mes $mes';
+    return nombres[mes];
+  }
+
+  void _cargarMesesDesdeCronograma(dynamic value) {
+    final lista = _lista(value);
+
+    final mesesApi = lista.map((item) {
+      final map = _mapa(item);
+
+      final numero = int.tryParse(
+            _texto(map['mes_numero'] ?? map['mes'] ?? map['numero']),
+          ) ??
+          0;
+
+      final nombreApi = _texto(map['mes_nombre'] ?? map['nombre']);
+
+      if (numero <= 0) return null;
+
+      return _MesItem(
+        numero: numero,
+        nombre: nombreApi.trim().isNotEmpty ? nombreApi : _nombreMes(numero),
+      );
+    }).whereType<_MesItem>().toList();
+
+    mesesApi.sort((a, b) => a.numero.compareTo(b.numero));
+
+    meses = mesesApi;
+
+    if (meses.isNotEmpty) {
+      final existeSeleccionado = meses.any((m) => m.numero == mesSeleccionado);
+
+      if (mesSeleccionado == null || !existeSeleccionado) {
+        mesSeleccionado = meses.first.numero;
+      }
+    }
   }
 
   @override
@@ -199,13 +253,13 @@ class _InformesPageState extends State<InformesPage> {
                       return InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: cargando
-                            ? null
-                            : () {
-                                setState(() {
-                                  mesSeleccionado = mes.numero;
-                                });
-                                _generarReporte();
-                              },
+                          ? null
+                          : () {
+                              setState(() {
+                                mesSeleccionado = mes.numero;
+                              });
+                              _generarReporte();
+                            },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 18,
